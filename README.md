@@ -2,21 +2,21 @@
 
 制作中の [戦闘機ゲーム](https://github.com/s059ff/ZephyrEngine/tree/master/application02) の強化学習プログラム
 
-###### ゲームのスクリーンショット
+##### ゲームのスクリーンショット
 
 ![](https://raw.githubusercontent.com/s059ff/ZephyrEngine/master/screenshots/application_03.png)
 
-###### デモ動画
+##### デモ動画
 
-**人間 操作**
+###### 人間操作
 
 <video src="https://github.com/s059ff/programming-python-openai-gym/raw/main/doc/videos/app.exe%202024-09-02%2018-32-26.mp4" controls="true"></video>
 
-**COM 操作**
+###### COM 操作
 
 <video src="https://github.com/s059ff/programming-python-openai-gym/raw/main/doc/videos/app.exe%202024-09-02%2018-46-26.mp4" controls="true"></video>
 
-###### 動作イメージ
+##### 動作イメージ
 
 ![](doc/images/overview.drawio.png)
 
@@ -29,18 +29,25 @@
     - training: レンダリング処理は, 学習に不要なためスキップする
   - 敵機は常に COM 操作
 
-###### COM 操作 (ルールベース AI) について
+##### COM 操作 (ルールベース AI) について
 
 1. 高度が低い
    → 高度を上げる
 2. 戦闘エリア境界に近い
    → 戦闘エリア中央に引き返す
 3. ミサイルに追尾されている
-   → ミサイル回避運動
+   → 回避運動
 4. 敵機に追尾されている (ロックオンされている)
-   → 敵機回避運動
+   → 回避運動
 5. 1~4 どれにも該当しない
-   → 最適な射撃位置に移動する
+   → ターゲットの未来予測位置に向かって旋回+移動
+
+**ターゲットの選定**
+
+- ランダムに選択
+- ターゲットが撃墜されると再度ランダムに選択
+
+**攻撃ルーチン**
 
 - 敵機をロックしている場合, 0.001 (適当) の確率でミサイルを発射
 - 機関砲の射程内に敵機がいて, 命中確率が高い場合, 機関砲を発射
@@ -66,6 +73,7 @@ https://github.com/s059ff/ZephyrEngine/ の `application02` プロジェクト�
 
 ## Environment の設計
 
+- 自機 x1, 敵機 x1, 味方機なし
 - 1 フレーム = 1 ステップ = (1/60 秒)
 - 1 エピソード: 以下のいずれかの条件に該当したとき
   - 自機または敵機が撃墜された (耐久値が 0 になった)
@@ -230,3 +238,59 @@ rew += -obj["target"]["armor_delta"]
 - 学習係数: 0.995
   - 行動を開始してから, 報酬に反映されるまでの期間が一般的な強化学習より長い?
     そのため, デフォルトの学習係数 0.99 より少し大きい値にした.
+
+## 学習結果
+
+**1エピソード中の平均報酬 (rollout/ep_len_mean)**
+
+<img src="doc/charts/rollout_ep_rew_mean.svg" width=25%/>
+
+- 何回かトライしてみたが, いずれも収束していない.
+- 正の報酬がなく, 負の報酬しか得られていない.
+  → 自機の攻撃が全くヒットしていないと思われる.
+
+これ以外のグラフについては doc/charts/ 以下を参照
+
+**学習済みのモデル評価**
+
+* deterministic=false
+
+<video src="https://github.com/s059ff/programming-python-openai-gym/raw/main/doc/videos/app.exe%202024-09-03%2004-14-01" controls="true"></video>
+
+* deterministic=true
+
+<video src="https://github.com/s059ff/programming-python-openai-gym/raw/main/doc/videos/app.exe%202024-09-03%2004-16-07.mp4" controls="true"></video>
+
+## 今後の取り組み
+
+- ニューラルネットワークへの入力値を見直す.
+  - 座標は Vector3 でいいとして, 角度は Quaternion でよいのか?
+  - 今回, 座標は絶対値を用いたが, 相対値のほうが良いのではないか? (自機から見た敵機の相対位置)
+  - ViZDOOM[^1] (DOOM の強化学習コンテスト) では画面画像を入力している. 画面画像を入力するほうがよいのか?
+- 報酬の設計
+- 割引率の設計
+- 環境の設計
+  - COM が強すぎて, エージェントが一度も勝てず, 学習が進まない?
+  - 最初はもっと弱い COM にして, 徐々に強くするべき? (カリキュラム学習)
+- アルゴリズムの選択
+  - PPO 以外は試していないため, 他も試す.
+
+(以下の項目は対応済み)
+
+- ゲームのバグの修正
+  - socket 通信が正しく行われているか確認する
+    →挙動が怪しかったので, 再度実装しなおした. 1日中回していてもクラッシュしなくなったので, とりあえずよしとする.
+  - ゲームがメモリリークを起こしていて, 時間経過でクラッシュする
+    →メモリリークを起こしている個所を特定して修正. 1日中回していてもメモリ使用量に大きな変化はなくなったので, よしとする.
+
+[^1]: https://vizdoom.cs.put.edu.pl/
+
+---
+
+##### Tips
+
+###### 飛行機の回転
+
+![](doc/images/Eg_Pitch_Yaw_Roll.png)
+
+注: 左手座標系
