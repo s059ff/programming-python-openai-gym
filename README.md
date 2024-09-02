@@ -10,11 +10,11 @@
 
 **人間 操作**
 
-<video src="doc/videos/app.exe 2024-09-02 18-32-26.mp4" controls="true"></video>
+<video src="https://github.com/s059ff/programming-python-openai-gym/raw/main/doc/videos/app.exe%202024-09-02%2018-32-26.mp4" controls="true"></video>
 
 **COM 操作**
 
-<video src="doc/videos/app.exe 2024-09-02 18-46-26.mp4" controls="true"></video>
+<video src="https://github.com/s059ff/programming-python-openai-gym/raw/main/doc/videos/app.exe%202024-09-02%2018-46-26.mp4" controls="true"></video>
 
 ###### 動作イメージ
 
