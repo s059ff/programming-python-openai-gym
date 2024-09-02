@@ -106,7 +106,7 @@ def act(action: gymnasium.spaces.Space):
         "pitch_input": float(action[1]),
         "yaw_input": float(action[2]),
         "throttle_input": float(action[3]),
-        "missile_launch_input": 0.0,
+        "missile_launch_input": float(action[4]),
         "gun_fire_input": float(action[5]),
     }
     return cast(dict[str, Any], obj)
