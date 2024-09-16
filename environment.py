@@ -13,9 +13,6 @@ import psutil
 
 
 def launch_gameproc(runid: str, envid: int, *, training: bool = True):
-    game_dir = "~/source/repos/programming-game-engine/ZephyrEngine/application02"
-    game_dir = os.path.expanduser(game_dir)
-
     mode = "training" if training else "evaluation"
     args = [
         *["--mode", mode],
@@ -28,8 +25,8 @@ def launch_gameproc(runid: str, envid: int, *, training: bool = True):
     os.makedirs(f"./logs/{runid}/", exist_ok=True)
 
     proc = subprocess.Popen(
-        [f"{game_dir}/bin/x64/Release/app.exe", *args],
-        cwd=game_dir,
+        ["./game/app.exe", *args],
+        cwd="./game",
         stdout=open(f"./logs/{runid}/env{envid}-stdout.log", mode="w"),
         stderr=open(f"./logs/{runid}/env{envid}-stderr.log", mode="w"),
     )
