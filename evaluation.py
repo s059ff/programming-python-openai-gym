@@ -25,9 +25,7 @@ def main():
     env = MyGameEnv(runid, envid, training=False, debug=False)
 
     ModelType = {"ppo": PPO, "sac": SAC}[args.model]
-    model = ModelType("MlpPolicy", env, verbose=1)
-
-    model.load(args.model_path)
+    model = ModelType.load(args.model_path, env)
 
     obs, info = env.reset()
 

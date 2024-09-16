@@ -3,6 +3,7 @@ import os
 import shutil
 import sys
 from datetime import datetime
+from typing import cast
 
 from stable_baselines3 import PPO, SAC
 from stable_baselines3.common.base_class import BaseAlgorithm
@@ -79,13 +80,14 @@ def main():
     )
 
     ModelType = {"ppo": PPO, "sac": SAC}[args.model]
-    model: BaseAlgorithm = ModelType(
-        "MlpPolicy", env, verbose=1, device=args.device, gamma=args.gamma
-    )
+    if args.model_path is None:
+        model = ModelType(
+            "MlpPolicy", env, verbose=1, device=args.device, gamma=args.gamma
+        )
+    else:
+        model = ModelType.load(args.model_path, env)
+    model = cast(BaseAlgorithm, model)
     print(model.policy)
-
-    if args.model_path:
-        model.load(args.model_path)
 
     mylogger = configure(log_dir, ["log", "csv", "tensorboard"])
     model.set_logger(mylogger)
