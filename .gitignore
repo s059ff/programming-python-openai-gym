@@ -167,5 +167,6 @@ cython_debug/
 
 .vscode/
 backups/
-logs/
-models/
+logs*/
+models*/
+game/
