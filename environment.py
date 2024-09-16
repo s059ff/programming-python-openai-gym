@@ -19,6 +19,7 @@ def launch_gameproc(runid: str, envid: int, *, training: bool = True):
         *["--enemy_count", "1"],
         *["--friend_count", "0"],
         *["--random_seed", "8492"],
+        "--cheat_no_attack",
     ]
     logging.info(f"gameproc args: {args}")
 
@@ -75,17 +76,23 @@ def receive(sock: socket.socket):
 
 def observe(obj: dict[str, Any]):
     array = [
-        obj["player"]["armor_delta"],  # 1
+        # obj["player"]["armor"],  # 1
+        obj["player"]["altitude"],  # 1
+        obj["player"]["engine_power"],  # 1
         *obj["player"]["position"],  # 3
-        *obj["player"]["rotation"],  # 4
+        *obj["player"]["rotation"],  # 6
         *obj["player"]["velocity"],  # 3
-        obj["target"]["armor_delta"],  # 1
-        *obj["target"]["position"],  # 3
-        *obj["target"]["rotation"],  # 4
-        *obj["target"]["velocity"],  # 3
-        *obj["threat_missile"]["position"],  # 3
-        *obj["threat_missile"]["rotation"],  # 4
-        *obj["threat_missile"]["velocity"],  # 3
+        # obj["player"]["missile_lock"],  # 1
+        # obj["opponent"]["armor"],  # 1
+        # obj["opponent"]["altitude"],  # 1
+        # obj["opponent"]["engine_power"],  # 1
+        *obj["opponent"]["position"],  # 3
+        *obj["opponent"]["rotation"],  # 6
+        *obj["opponent"]["velocity"],  # 3
+        # obj["opponent"]["missile_lock"],  # 1
+        # *obj["threat_missile"]["position"],  # 3
+        # *obj["threat_missile"]["rotation"],  # 6
+        # *obj["threat_missile"]["velocity"],  # 3
     ]
     return array
 
@@ -103,15 +110,20 @@ def act(action: gymnasium.spaces.Space):
         "pitch_input": float(action[1]),
         "yaw_input": float(action[2]),
         "throttle_input": float(action[3]),
-        "missile_launch_input": float(action[4]),
-        "gun_fire_input": float(action[5]),
+        # "missile_launch_input": float(action[4]),
+        # "gun_fire_input": float(action[5]),
     }
     return cast(dict[str, Any], obj)
 
 
+def clamp(value: float, lower: float, upper: float):
+    assert lower < upper
+    return min(max(value, lower), upper)
+
+
 class MyGameEnv(gymnasium.Env):
-    D = 2 + 10 + 10 + 10
-    A = 6
+    D = (1 + 1 + 3 + 6 + 3) + (3 + 6 + 3)
+    A = 4
 
     def __init__(
         self,
@@ -140,25 +152,32 @@ class MyGameEnv(gymnasium.Env):
 
         self.observation_space = gymnasium.spaces.Box(-1.0, 1.0, shape=(MyGameEnv.D,))
         self.action_space = gymnasium.spaces.Box(-1.0, 1.0, shape=(MyGameEnv.A,))
-        self.reward_range = [-1.0, 1.0]
+        self.reward_range = [-1.0, +1.0]
 
     def reset(self, seed=None):
         # if self.sock:
         #     self.sock.close()
         # self.sock = connect(self.pid)
-        obs = observe(receive(self.sock))
+
+        obj = receive(self.sock)
+        self.engine_power = float(obj["player"]["engine_power"])
+
+        obs = observe(obj)
         info = {}
         return obs, info
 
     def step(self, action):
-        send(self.sock, act(action))
+        obj = act(action)
+        obj["throttle_input"] = 0.5 * (obj["throttle_input"] + 1.0)  # [-1, 1] -> [0, 1]
+        obj["throttle_input"] = obj["throttle_input"] - self.engine_power
+        send(self.sock, obj)
 
         obj = receive(self.sock)
+        self.engine_power = float(obj["player"]["engine_power"])
+
         obs = observe(obj)
 
-        rew = 0.0
-        rew += obj["player"]["armor_delta"]
-        rew += -obj["target"]["armor_delta"]
+        rew = obj["reward"]
 
         done = obj["episode_done"]
 
