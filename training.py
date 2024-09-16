@@ -41,7 +41,7 @@ def parse_args():
     parser.add_argument("-p", "--model_path", type=str)
     parser.add_argument("-i", "--runid", type=str)
     parser.add_argument("-n", "--num_envs", type=int, default=1)
-    parser.add_argument("--gamma", type=float, default=0.995)
+    parser.add_argument("--gamma", type=float, default=0.999)
     parser.add_argument("--device", default="cpu", choices=["cpu", "cuda"])
     parser.add_argument("--debug", action="store_true")
 
